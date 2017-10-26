@@ -1,0 +1,24 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/fCotainer"
+    tools:context="com.example.android.bakingapp.fragments.MainFragment">
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/recipe_recycler_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    </android.support.v7.widget.RecyclerView>
+
+    <TextView
+        android:visibility="gone"
+        android:gravity="center"
+        android:layout_marginTop="50dp"
+        android:id="@+id/no_data"
+        android:textSize="30sp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</FrameLayout>
