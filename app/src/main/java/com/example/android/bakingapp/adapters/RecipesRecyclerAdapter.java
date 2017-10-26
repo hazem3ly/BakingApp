@@ -6,11 +6,13 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.example.android.bakingapp.R;
 import com.example.android.bakingapp.activity.RecipeDetails;
 import com.example.android.bakingapp.model.Recipe;
+import com.squareup.picasso.Picasso;
 
 import java.util.ArrayList;
 
@@ -55,18 +57,37 @@ public class RecipesRecyclerAdapter extends RecyclerView.Adapter<RecipesRecycler
     class ViewHolder extends RecyclerView.ViewHolder {
 
         TextView recipeName;
+        ImageView recipe_image;
         CardView cv;
 
         ViewHolder(final View itemView) {
             super(itemView);
 
             recipeName = itemView.findViewById(R.id.recipeName);
+            recipe_image = itemView.findViewById(R.id.recipe_image);
             cv = itemView.findViewById(R.id.cv);
 
         }
 
         void bindData(final Recipe recipe) {
             recipeName.setText(recipe.name);
+            if (recipe.image.isEmpty()) {
+                if (recipe.id == 1){
+                    recipe_image.setImageResource(R.drawable.nutella);
+                }else if (recipe.id == 2){
+                    recipe_image.setImageResource(R.drawable.brownies);
+                }else if (recipe.id == 3){
+                    recipe_image.setImageResource(R.drawable.yellowcake);
+                }else if (recipe.id == 4){
+                    recipe_image.setImageResource(R.drawable.cheesecake);
+                }
+            }else {
+                Picasso.with(cv.getContext())
+                        .load(recipe.image)
+                        .placeholder(R.drawable.loading)
+                        .error(R.drawable.error)
+                        .into(recipe_image);
+            }
             cv.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {

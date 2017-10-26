@@ -9,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.support.v4.media.session.MediaSessionCompat;
 import android.support.v4.media.session.PlaybackStateCompat;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,6 +18,7 @@ import android.widget.TextView;
 
 import com.example.android.bakingapp.R;
 import com.example.android.bakingapp.model.Step;
+import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.DefaultLoadControl;
 import com.google.android.exoplayer2.ExoPlaybackException;
 import com.google.android.exoplayer2.ExoPlayer;
@@ -42,12 +44,17 @@ import static com.example.android.bakingapp.utils.Constants.SELECTED_STEP;
  */
 public class StepDetailsFragment extends Fragment implements ExoPlayer.EventListener {
 
+    public final static String PRAYER_POSITION = "prayer_position";
+    public final static String PRAYER_STATE = "prayer_state";
     private static MediaSessionCompat mMediaSession;
     String TAG = StepDetailsFragment.class.getSimpleName();
     private Step selectedStep;
     private PlaybackStateCompat.Builder mStateBuilder;
     private SimpleExoPlayer mExoPlayer;
     private SimpleExoPlayerView mPlayerView;
+    private Uri videoUri;
+    private long position = 0;
+    private boolean playing;
 
 
     public StepDetailsFragment() {
@@ -93,14 +100,21 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
 
             }
 
+            position = C.TIME_UNSET;
+            if (savedInstanceState != null) {
+                //...your code...
+                position = savedInstanceState.getLong(PRAYER_POSITION, C.TIME_UNSET);
+                playing = savedInstanceState.getBoolean(PRAYER_STATE, false);
+            }
+
             // Initialize the Media Session.
             initializeMediaSession();
 
-            if (selectedStep.videoURL != null && !selectedStep.videoURL.equals("")){
+            if (selectedStep.videoURL != null && !selectedStep.videoURL.equals("")) {
                 // Initialize the player.
-                initializePlayer(Uri.parse(selectedStep.videoURL));
+                videoUri = Uri.parse(selectedStep.videoURL);
 
-            }else {
+            } else {
                 ImageView no_video = rootView.findViewById(R.id.no_video);
                 no_video.setVisibility(View.VISIBLE);
                 no_video.setImageResource(R.drawable.no_video);
@@ -111,6 +125,15 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
         return rootView;
     }
 
+    @Override
+    public void onResume() {
+
+        if (videoUri != null)
+            initializePlayer(videoUri);
+
+        super.onResume();
+    }
+
     private void fillData(View rootView) {
         TextView shortDescription = rootView.findViewById(R.id.shortDescription);
         shortDescription.setText(selectedStep.shortDescription);
@@ -118,6 +141,13 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
         description.setText(selectedStep.description);
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+
+        outState.putLong(PRAYER_POSITION, position);
+        outState.putBoolean(PRAYER_STATE, playing);
+        super.onSaveInstanceState(outState);
+    }
 
     /**
      * Initializes the Media Session to be enabled with media buttons, transport controls, callbacks
@@ -176,7 +206,10 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
             MediaSource mediaSource = new ExtractorMediaSource(mediaUri, new DefaultDataSourceFactory(
                     getContext(), userAgent), new DefaultExtractorsFactory(), null, null);
             mExoPlayer.prepare(mediaSource);
-            mExoPlayer.setPlayWhenReady(true);
+            if (position != C.TIME_UNSET) mExoPlayer.seekTo(position);
+            if (playing) mExoPlayer.setPlayWhenReady(true);
+            else mExoPlayer.setPlayWhenReady(false);
+            mExoPlayer.getPlaybackState();
         }
     }
 
@@ -222,6 +255,9 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
      */
     private void releasePlayer() {
         if (mExoPlayer != null) {
+            position = mExoPlayer.getCurrentPosition();
+            playing = mExoPlayer.getPlayWhenReady();
+            Log.d("playing", String.valueOf(playing));
             mExoPlayer.stop();
             mExoPlayer.release();
             mExoPlayer = null;
@@ -229,10 +265,11 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
     }
 
     @Override
-    public void onDestroy() {
+    public void onPause() {
+
         releasePlayer();
         if (mMediaSession != null) mMediaSession.setActive(false);
-        super.onDestroy();
+        super.onPause();
     }
 
     /**
@@ -241,11 +278,13 @@ public class StepDetailsFragment extends Fragment implements ExoPlayer.EventList
     private class MySessionCallback extends MediaSessionCompat.Callback {
         @Override
         public void onPlay() {
+            playing = true;
             mExoPlayer.setPlayWhenReady(true);
         }
 
         @Override
         public void onPause() {
+            playing = false;
             mExoPlayer.setPlayWhenReady(false);
         }
 
